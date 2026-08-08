@@ -15,6 +15,7 @@ build/
 server/.env
 !.env.example
 !server/.env.example
+.vercel
 
 # Database
 *.db

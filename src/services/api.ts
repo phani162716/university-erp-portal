@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+// On Vercel: empty VITE_API_BASE_URL → same-origin /api (rewritten to serverless Express)
+// Local: proxy in vite.config.ts, or set VITE_API_BASE_URL=http://localhost:5000/api
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
 });

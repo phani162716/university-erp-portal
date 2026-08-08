@@ -1,13 +1,17 @@
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Use Supabase "Direct connection" for migrations/seed (port 5432)
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // native = local; rhel-openssl-3.0.x = Vercel serverless
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
-// Roles (string for SQLite compatibility): SUPER_ADMIN | UNIVERSITY_ADMIN | FACULTY | STUDENT |
+// Roles: SUPER_ADMIN | UNIVERSITY_ADMIN | FACULTY | STUDENT |
 // EXAMINATION_ADMIN | FINANCE_ADMIN | HOSTEL_ADMIN | TRANSPORT_ADMIN | HR_ADMIN
 
 model User {

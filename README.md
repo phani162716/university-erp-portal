@@ -1,6 +1,16 @@
 # University ERP Portal
 
-Full-stack University / Student Management ERP with React, TypeScript, Tailwind CSS, Express, Prisma, and SQLite (PostgreSQL-ready).
+Full-stack University / Student Management ERP with React, TypeScript, Tailwind CSS, Express, Prisma, and **PostgreSQL (Supabase)**.
+
+## Deploy (Vercel + Supabase)
+
+See **[DEPLOY.md](./DEPLOY.md)** for full steps.
+
+Quick path:
+
+1. Create a [Supabase](https://supabase.com) project → copy pooler + direct DB URLs  
+2. Set `DATABASE_URL` + `DIRECT_URL` in `server/.env` → `prisma db push` + seed  
+3. Import this GitHub repo on [Vercel](https://vercel.com) → add the same env vars → Deploy
 
 ## Features
 

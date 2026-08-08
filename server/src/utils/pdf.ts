@@ -1,6 +1,12 @@
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 
+function frontendBase(): string {
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL.replace(/\/$/, '');
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'http://localhost:5173';
+}
+
 export async function generateHallTicketPDF(student: any, exam: any, hallTicketNo: string): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -30,7 +36,7 @@ export async function generateHallTicketPDF(student: any, exam: any, hallTicketN
       doc.text(`Venue: ${exam.venue}`, 320, 190);
 
       // QR Code Generation
-      const verifyUrl = `http://localhost:5173/verify/${hallTicketNo}`;
+      const verifyUrl = `${frontendBase()}/verify/${hallTicketNo}`;
       const qrDataUrl = await QRCode.toDataURL(verifyUrl);
       const qrImageBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
@@ -87,7 +93,7 @@ export async function generateFeeReceiptPDF(student: any, fee: any, payment: any
       doc.rect(55, 220, 485, 25).fill('#F1F5F9');
       doc.fillColor('#0F172A').fontSize(11).text(`Amount Paid: ₹${payment.amount.toLocaleString()} (SUCCESS)`, 65, 227);
 
-      const verifyUrl = `http://localhost:5173/verify/${payment.transactionId}`;
+      const verifyUrl = `${frontendBase()}/verify/${payment.transactionId}`;
       const qrDataUrl = await QRCode.toDataURL(verifyUrl);
       const qrImageBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
       doc.image(qrImageBuffer, 460, 270, { width: 85 });
@@ -131,7 +137,7 @@ export async function generateBonafidePDF(student: any, docType = 'Bonafide Cert
       doc.text('_______________________', 50, 360);
       doc.text('Registrar / Academic Office', 50, 380);
 
-      const verifyUrl = `http://localhost:5173/verify/${docId}`;
+      const verifyUrl = `${frontendBase()}/verify/${docId}`;
       const qrDataUrl = await QRCode.toDataURL(verifyUrl);
       const qrImageBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
       doc.image(qrImageBuffer, 450, 340, { width: 85 });
@@ -181,7 +187,7 @@ export async function generateResultPDF(student: any): Promise<Buffer> {
         y += 18;
       }
 
-      const verifyUrl = `http://localhost:5173/verify/RESULT-${student.registerNo}`;
+      const verifyUrl = `${frontendBase()}/verify/RESULT-${student.registerNo}`;
       const qrDataUrl = await QRCode.toDataURL(verifyUrl);
       const qrImageBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
       doc.image(qrImageBuffer, 450, y + 30, { width: 85 });
