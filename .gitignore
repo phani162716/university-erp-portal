@@ -51,3 +51,6 @@ temp/
 
 # Vite
 .vite/
+
+.vercel
+.env*

@@ -1,0 +1,6 @@
+﻿.env
+.env.local
+server/.env
+node_modules
+server/node_modules
+.jwt_secret.tmp

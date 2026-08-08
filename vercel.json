@@ -2,16 +2,16 @@
   "version": 2,
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",
-  "installCommand": "npm install && npm install --prefix server",
+  "installCommand": "npm install --include=dev && npm install --prefix server --include=dev",
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/index.ts": {
+    "api/index.js": {
       "maxDuration": 30,
-      "includeFiles": "server/prisma/**"
+      "includeFiles": "server/dist/**"
     }
   }
 }
