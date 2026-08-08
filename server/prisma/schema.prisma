@@ -1,0 +1,386 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Roles (string for SQLite compatibility): SUPER_ADMIN | UNIVERSITY_ADMIN | FACULTY | STUDENT |
+// EXAMINATION_ADMIN | FINANCE_ADMIN | HOSTEL_ADMIN | TRANSPORT_ADMIN | HR_ADMIN
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  registerNo   String   @unique
+  passwordHash String
+  role         String   @default("STUDENT")
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  studentProfile StudentProfile?
+  facultyProfile FacultyProfile?
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  feedbacks      Feedback[]
+}
+
+model StudentProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registerNo     String   @unique
+  school         String
+  programId      String?
+  program        Program?  @relation(fields: [programId], references: [id])
+  specialization String
+  semester       String
+  section        String
+  dob            String
+  gender         String
+  phone          String
+  email          String
+  fatherName     String
+  motherName     String
+  academicYear   String
+  admissionYear  String
+  bloodGroup     String
+  address        String
+  cgpa           Float    @default(0.0)
+
+  registrations     CourseRegistration[]
+  attendanceRecords AttendanceRecord[]
+  examRegistrations ExamRegistration[]
+  examResults       ExamResult[]
+  feeRecords        FeeRecord[]
+  payments          PaymentTransaction[]
+  hostelAllocation  HostelAllocation?
+  transportAlloc    TransportAllocation?
+  submissions       AssignmentSubmission[]
+  eventRegs         EventRegistration[]
+  documentRequests  DocumentRequest[]
+}
+
+model FacultyProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId   String   @unique
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  designation  String
+  phone        String
+  officeRoom   String
+
+  courses      Course[]
+  assignments  Assignment[]
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  programs  Program[]
+  faculty   FacultyProfile[]
+}
+
+model Program {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         String
+  degree       String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  students     StudentProfile[]
+  courses      Course[]
+}
+
+model Course {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         String
+  credits      Int
+  type         String   // Core / Elective / Lab
+  semester     String
+  programId    String?
+  program      Program? @relation(fields: [programId], references: [id])
+  facultyId    String?
+  faculty      FacultyProfile? @relation(fields: [facultyId], references: [id])
+  seatsTotal   Int      @default(60)
+  seatsTaken   Int      @default(0)
+  prerequisites String?
+
+  registrations CourseRegistration[]
+  attendance    AttendanceRecord[]
+  timetable     TimeTableSlot[]
+  exams         Exam[]
+  assignments   Assignment[]
+}
+
+model CourseRegistration {
+  id        String   @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status    String   @default("REGISTERED") // REGISTERED, DROPPED
+  createdAt DateTime @default(now())
+}
+
+model AttendanceRecord {
+  id        String   @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  date      String
+  status    String   // PRESENT, ABSENT, LATE
+  createdAt DateTime @default(now())
+}
+
+model TimeTableSlot {
+  id        String @id @default(uuid())
+  day       String // Monday, Tuesday...
+  startTime String // 08:00
+  endTime   String // 09:00
+  courseId  String
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  room      String
+}
+
+model Exam {
+  id        String   @id @default(uuid())
+  code      String
+  name      String
+  type      String   // INTERNAL, END_SEM
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  date      String
+  time      String
+  venue     String
+  maxMarks  Int      @default(100)
+
+  registrations ExamRegistration[]
+  results       ExamResult[]
+}
+
+model ExamRegistration {
+  id        String   @id @default(uuid())
+  examId    String
+  exam      Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  hallTicketNo String @unique
+  status    String   @default("ISSUED")
+}
+
+model ExamResult {
+  id          String   @id @default(uuid())
+  examId      String
+  exam        Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  marksObtained Float
+  grade       String
+  gradePoints Int
+  result      String   // PASS, FAIL
+  semester    String
+}
+
+model FeeRecord {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  category    String   // Tuition, Hostel, Transport, Exam, Library, Other
+  description String
+  totalAmount Float
+  paidAmount  Float    @default(0.0)
+  dueDate     String
+  status      String   @default("PENDING") // PENDING, PARTIAL, PAID
+
+  payments    PaymentTransaction[]
+}
+
+model PaymentTransaction {
+  id            String   @id @default(uuid())
+  feeRecordId   String
+  feeRecord     FeeRecord      @relation(fields: [feeRecordId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  transactionId String   @unique
+  amount        Float
+  paymentMethod String
+  status        String   // SUCCESS, FAILED, PENDING
+  paidAt        DateTime @default(now())
+}
+
+model HostelBlock {
+  id        String   @id @default(uuid())
+  name      String
+  gender    String
+  rooms     HostelRoom[]
+}
+
+model HostelRoom {
+  id          String   @id @default(uuid())
+  blockId     String
+  block       HostelBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  roomNo      String
+  capacity    Int
+  occupied    Int      @default(0)
+  roomType    String   // AC Single, Non-AC Double, etc.
+  mess        String
+  warden      String
+
+  allocations HostelAllocation[]
+}
+
+model HostelAllocation {
+  id        String   @id @default(uuid())
+  studentId String   @unique
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  roomId    String
+  room      HostelRoom     @relation(fields: [roomId], references: [id])
+  bedNo     String
+  status    String   @default("ALLOCATED")
+}
+
+model TransportRoute {
+  id          String   @id @default(uuid())
+  routeNo     String   @unique
+  routeName   String
+  pickupPoints String
+  feeAmount   Float
+
+  buses       TransportBus[]
+  allocations TransportAllocation[]
+}
+
+model TransportBus {
+  id         String   @id @default(uuid())
+  busNo      String   @unique
+  routeId    String
+  route      TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  capacity   Int
+  driverName String
+  driverPhone String
+}
+
+model TransportAllocation {
+  id          String   @id @default(uuid())
+  studentId   String   @unique
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  routeId     String
+  route       TransportRoute @relation(fields: [routeId], references: [id])
+  pickupPoint String
+  pickupTime  String
+  dropTime    String
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  facultyId   String
+  faculty     FacultyProfile @relation(fields: [facultyId], references: [id])
+  dueDate     String
+  maxMarks    Int      @default(100)
+  attachment  String?
+
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String   @id @default(uuid())
+  assignmentId String
+  assignment   Assignment     @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fileUrl      String
+  submittedAt  DateTime @default(now())
+  marks        Int?
+  feedback     String?
+  status       String   @default("SUBMITTED") // SUBMITTED, GRADED, LATE
+}
+
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  category    String   // Academic, Exam, Finance, Hostel, Transport, Events, General
+  priority    String   @default("NORMAL") // HIGH, MEDIUM, NORMAL
+  date        String
+  attachment  String?
+  createdAt   DateTime @default(now())
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  date        String
+  time        String
+  venue       String
+  organizer   String
+  category    String
+
+  registrations EventRegistration[]
+}
+
+model EventRegistration {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  registeredAt DateTime    @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // INFO, WARNING, SUCCESS, URGENT
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model DocumentRequest {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  docType     String   // Bonafide Certificate, ID Card, Fee Receipt, Hall Ticket, Result
+  reason      String
+  status      String   @default("APPROVED") // PENDING, APPROVED, REJECTED
+  documentUrl String?
+  qrCodeUrl   String?
+  requestedAt DateTime @default(now())
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String   // Faculty, Course, Infrastructure, Hostel, Transport, Food, General
+  rating    Int
+  comments  String
+  isAnonymous Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role      String
+  action    String
+  details   String
+  ipAddress String   @default("127.0.0.1")
+  createdAt DateTime @default(now())
+}
