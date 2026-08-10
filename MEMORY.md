@@ -1,6 +1,6 @@
 # University ERP Portal — Project Memory
 
-Last updated: 2026-08-08
+Last updated: 2026-08-08 (perf pass: shared Prisma, lean dashboard, sin1 region)
 
 ---
 
@@ -188,13 +188,30 @@ npx neonctl projects list --org-id org-hidden-grass-41554661
 
 ---
 
+## Performance notes (2026-08-08)
+
+| Call | Before | After |
+|------|--------|-------|
+| Login API | ~3.0–3.5s | ~0.4s |
+| Dashboard API | ~8–10s | ~0.2–0.5s |
+| Main JS bundle | ~748 KB one chunk | ~71 KB core + lazy pages |
+
+Fixes applied:
+- Shared `prisma` singleton (controllers no longer each `new PrismaClient()`)
+- Lean parallel dashboard queries
+- React lazy routes + Vite manualChunks
+- Vercel function region **`sin1`** (Singapore) next to Neon `ap-southeast-1`
+
+Cold starts after idle can still add ~1s (serverless + Neon wake).
+
 ## Known issues / decisions
 
 1. **Supabase vs Neon** — App is Postgres-agnostic; currently on Neon. Supabase works if URLs are replaced and re-seeded.
 2. **GitHub ↔ Vercel auto-deploy** — CLI deploy works; linking GitHub may need “Login Connection” in Vercel account settings for auto-deploy on push.
-3. **Serverless cold starts** — First `/api` call after idle may be slow (Neon compute may suspend).
+3. **Serverless cold starts** — First `/api` call after idle may be slower (Neon compute may suspend).
 4. **PDF QR URLs** — Use `FRONTEND_URL` / `VERCEL_URL` for verify links.
 5. **Password in Neon** — Created at project bootstrap; rotate in Neon console if exposed in logs/chats.
+6. **Region** — Keep Vercel `regions: ["sin1"]` aligned with Neon Singapore; US region caused multi-second DB latency.
 
 ---
 

@@ -1,9 +1,7 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { generateHallTicketPDF } from '../utils/pdf';
-
-const prisma = new PrismaClient();
 
 export async function getExams(req: AuthenticatedRequest, res: Response) {
   try {

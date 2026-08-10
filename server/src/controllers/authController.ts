@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { comparePassword, generateToken } from '../utils/auth';
 import { AuthenticatedRequest } from '../middleware/auth';
-
-const prisma = new PrismaClient();
 
 export async function login(req: Request, res: Response) {
   try {
@@ -40,15 +38,18 @@ export async function login(req: Request, res: Response) {
       name: user.name,
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        role: user.role,
-        action: 'USER_LOGIN',
-        details: `Successful login for user ${user.registerNo}`,
-        ipAddress: req.ip || '127.0.0.1',
-      },
-    });
+    // Fire-and-forget audit (don't block login response)
+    prisma.auditLog
+      .create({
+        data: {
+          userId: user.id,
+          role: user.role,
+          action: 'USER_LOGIN',
+          details: `Successful login for user ${user.registerNo}`,
+          ipAddress: req.ip || '127.0.0.1',
+        },
+      })
+      .catch(() => undefined);
 
     return res.json({
       message: 'Login successful',
@@ -73,15 +74,15 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
+    // Lean /me — only fields needed for shell auth (faster cold starts)
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
-      include: {
-        studentProfile: {
-          include: { program: true },
-        },
-        facultyProfile: {
-          include: { department: true },
-        },
+      select: {
+        id: true,
+        email: true,
+        registerNo: true,
+        name: true,
+        role: true,
       },
     });
 
@@ -89,18 +90,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
       return res.status(404).json({ message: 'User record not found' });
     }
 
-    const { passwordHash: _ph, ...safeUser } = user;
-    return res.json({
-      user: {
-        id: safeUser.id,
-        email: safeUser.email,
-        registerNo: safeUser.registerNo,
-        name: safeUser.name,
-        role: safeUser.role,
-        studentProfile: safeUser.studentProfile,
-        facultyProfile: safeUser.facultyProfile,
-      },
-    });
+    return res.json({ user });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch user data' });
   }

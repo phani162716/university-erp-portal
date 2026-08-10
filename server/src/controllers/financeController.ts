@@ -1,9 +1,7 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { generateFeeReceiptPDF } from '../utils/pdf';
-
-const prisma = new PrismaClient();
 
 export async function getFees(req: AuthenticatedRequest, res: Response) {
   try {
@@ -86,7 +84,7 @@ export async function processMockPayment(req: AuthenticatedRequest, res: Respons
       data: {
         userId: req.user.userId,
         title: 'Fee Payment Successful',
-        message: `Payment of ₹${amount} for ${feeRecord.category} confirmed. Txn ID: ${transactionId}`,
+        message: `Payment of â‚¹${amount} for ${feeRecord.category} confirmed. Txn ID: ${transactionId}`,
         type: 'SUCCESS',
       },
     });

@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export async function verifyDocument(req: Request, res: Response) {
   try {
@@ -45,7 +43,7 @@ export async function verifyDocument(req: Request, res: Response) {
         documentId: payment.transactionId,
         studentName: payment.student.user.name,
         registerNo: payment.student.registerNo,
-        details: `${payment.feeRecord.category} - ₹${payment.amount.toLocaleString()}`,
+        details: `${payment.feeRecord.category} - â‚¹${payment.amount.toLocaleString()}`,
         status: 'VERIFIED & PAID',
       });
     }

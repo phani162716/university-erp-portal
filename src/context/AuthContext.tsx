@@ -12,42 +12,74 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
+function readCachedUser(): User | null {
+  try {
     const savedUser = localStorage.getItem('erp_user');
     return savedUser ? JSON.parse(savedUser) : null;
-  });
+  } catch {
+    return null;
+  }
+}
 
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('erp_token');
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(() => readCachedUser());
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('erp_token'));
+  // If we already have a cached session, don't block the whole UI on /auth/me
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    const t = localStorage.getItem('erp_token');
+    const u = localStorage.getItem('erp_user');
+    return Boolean(t && !u);
   });
-
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkAuth = async () => {
-      if (token) {
-        try {
-          const res = await api.get('/auth/me');
-          if (res.data?.user) {
-            setUser(res.data.user);
-            localStorage.setItem('erp_user', JSON.stringify(res.data.user));
-          }
-        } catch (err) {
-          logout();
-        }
+      if (!token) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      // Cached user: paint UI immediately, refresh in background
+      if (user) {
+        setIsLoading(false);
+      }
+
+      try {
+        const res = await api.get('/auth/me', { timeout: 15000 });
+        if (cancelled) return;
+        if (res.data?.user) {
+          const u = res.data.user;
+          const safe: User = {
+            id: u.id,
+            email: u.email,
+            registerNo: u.registerNo,
+            name: u.name,
+            role: u.role,
+          };
+          setUser(safe);
+          localStorage.setItem('erp_user', JSON.stringify(safe));
+        }
+      } catch {
+        if (!cancelled) logout();
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     };
 
     checkAuth();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
     localStorage.setItem('erp_token', newToken);
     localStorage.setItem('erp_user', JSON.stringify(newUser));
+    setIsLoading(false);
   };
 
   const logout = () => {
@@ -55,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('erp_token');
     localStorage.removeItem('erp_user');
+    setIsLoading(false);
   };
 
   return (

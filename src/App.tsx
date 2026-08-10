@@ -1,27 +1,73 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { MainLayout } from './layouts/MainLayout';
-import { Login } from './pages/Login';
-import { StudentDashboard } from './pages/StudentDashboard';
-import { StudentProfile } from './pages/StudentProfile';
-import { AcademicOverview } from './pages/AcademicOverview';
-import { CourseRegistration } from './pages/CourseRegistration';
-import { TimetablePage } from './pages/TimetablePage';
-import { AttendanceDashboard } from './pages/AttendanceDashboard';
-import { ExamManagement } from './pages/ExamManagement';
-import { ResultsDashboard } from './pages/ResultsDashboard';
-import { FinancePage } from './pages/FinancePage';
-import { HostelManagement } from './pages/HostelManagement';
-import { TransportManagement } from './pages/TransportManagement';
-import { AssignmentsPage } from './pages/AssignmentsPage';
-import { EventsAnnouncements } from './pages/EventsAnnouncements';
-import { FeedbackPage } from './pages/FeedbackPage';
-import { DocumentManagement } from './pages/DocumentManagement';
-import { DocumentVerification } from './pages/DocumentVerification';
-import { FacultyPortal } from './pages/FacultyPortal';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { SettingsPage } from './pages/SettingsPage';
+
+// Lazy-load pages so first paint only downloads the route you need (~smaller initial JS)
+const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })));
+const StudentDashboard = lazy(() =>
+  import('./pages/StudentDashboard').then((m) => ({ default: m.StudentDashboard }))
+);
+const StudentProfile = lazy(() =>
+  import('./pages/StudentProfile').then((m) => ({ default: m.StudentProfile }))
+);
+const AcademicOverview = lazy(() =>
+  import('./pages/AcademicOverview').then((m) => ({ default: m.AcademicOverview }))
+);
+const CourseRegistration = lazy(() =>
+  import('./pages/CourseRegistration').then((m) => ({ default: m.CourseRegistration }))
+);
+const TimetablePage = lazy(() =>
+  import('./pages/TimetablePage').then((m) => ({ default: m.TimetablePage }))
+);
+const AttendanceDashboard = lazy(() =>
+  import('./pages/AttendanceDashboard').then((m) => ({ default: m.AttendanceDashboard }))
+);
+const ExamManagement = lazy(() =>
+  import('./pages/ExamManagement').then((m) => ({ default: m.ExamManagement }))
+);
+const ResultsDashboard = lazy(() =>
+  import('./pages/ResultsDashboard').then((m) => ({ default: m.ResultsDashboard }))
+);
+const FinancePage = lazy(() =>
+  import('./pages/FinancePage').then((m) => ({ default: m.FinancePage }))
+);
+const HostelManagement = lazy(() =>
+  import('./pages/HostelManagement').then((m) => ({ default: m.HostelManagement }))
+);
+const TransportManagement = lazy(() =>
+  import('./pages/TransportManagement').then((m) => ({ default: m.TransportManagement }))
+);
+const AssignmentsPage = lazy(() =>
+  import('./pages/AssignmentsPage').then((m) => ({ default: m.AssignmentsPage }))
+);
+const EventsAnnouncements = lazy(() =>
+  import('./pages/EventsAnnouncements').then((m) => ({ default: m.EventsAnnouncements }))
+);
+const FeedbackPage = lazy(() =>
+  import('./pages/FeedbackPage').then((m) => ({ default: m.FeedbackPage }))
+);
+const DocumentManagement = lazy(() =>
+  import('./pages/DocumentManagement').then((m) => ({ default: m.DocumentManagement }))
+);
+const DocumentVerification = lazy(() =>
+  import('./pages/DocumentVerification').then((m) => ({ default: m.DocumentVerification }))
+);
+const FacultyPortal = lazy(() =>
+  import('./pages/FacultyPortal').then((m) => ({ default: m.FacultyPortal }))
+);
+const AdminDashboard = lazy(() =>
+  import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
+const SettingsPage = lazy(() =>
+  import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage }))
+);
+
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({
   children,
@@ -66,40 +112,42 @@ const HomeRedirect: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/verify/:documentId" element={<DocumentVerification />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/verify/:documentId" element={<DocumentVerification />} />
 
-      <Route
-        element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/" element={<HomeRedirect />} />
-        <Route path="/dashboard" element={<StudentDashboard />} />
-        <Route path="/profile" element={<StudentProfile />} />
-        <Route path="/academic" element={<AcademicOverview />} />
-        <Route path="/courses" element={<CourseRegistration />} />
-        <Route path="/timetable" element={<TimetablePage />} />
-        <Route path="/attendance" element={<AttendanceDashboard />} />
-        <Route path="/exams" element={<ExamManagement />} />
-        <Route path="/results" element={<ResultsDashboard />} />
-        <Route path="/finance" element={<FinancePage />} />
-        <Route path="/hostel" element={<HostelManagement />} />
-        <Route path="/transport" element={<TransportManagement />} />
-        <Route path="/assignments" element={<AssignmentsPage />} />
-        <Route path="/events" element={<EventsAnnouncements />} />
-        <Route path="/feedback" element={<FeedbackPage />} />
-        <Route path="/documents" element={<DocumentManagement />} />
-        <Route path="/faculty" element={<FacultyPortal />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/settings" element={<SettingsPage />} />
-      </Route>
+        <Route
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/dashboard" element={<StudentDashboard />} />
+          <Route path="/profile" element={<StudentProfile />} />
+          <Route path="/academic" element={<AcademicOverview />} />
+          <Route path="/courses" element={<CourseRegistration />} />
+          <Route path="/timetable" element={<TimetablePage />} />
+          <Route path="/attendance" element={<AttendanceDashboard />} />
+          <Route path="/exams" element={<ExamManagement />} />
+          <Route path="/results" element={<ResultsDashboard />} />
+          <Route path="/finance" element={<FinancePage />} />
+          <Route path="/hostel" element={<HostelManagement />} />
+          <Route path="/transport" element={<TransportManagement />} />
+          <Route path="/assignments" element={<AssignmentsPage />} />
+          <Route path="/events" element={<EventsAnnouncements />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/documents" element={<DocumentManagement />} />
+          <Route path="/faculty" element={<FacultyPortal />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
